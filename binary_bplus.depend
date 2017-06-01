@@ -1,0 +1,13 @@
+# depslib dependency file v1.0
+1496290289 source:c:\users\jang\»õ Æú´õ\binary_bplus\main.cpp
+	<cstdlib>
+	<iostream>
+	<fstream>
+	<vector>
+	<stdio.h>
+	<iomanip>
+	<string>
+	<sstream>
+	<cstring>
+	<cmath>
+
