@@ -7,7 +7,7 @@
 #include <string>
 #include <sstream>
 #include <cstring>
-#include <cmath>
+
 
 #define BLOCKSIZE  4096
 #define BLOCKCOUNT 12000
@@ -21,7 +21,7 @@ int str2int (const string &str) {
   int num;
   if((ss >> num).fail())
   {
-      /* ���� */
+      /* 에러 */
   }
   return num;
 }
@@ -30,7 +30,7 @@ unsigned str2unsign (const string &str) {
   unsigned num;
   if((ss >> num).fail())
   {
-      /* ���� */
+      /* 에러 */
   }
   return num;
 }
@@ -39,40 +39,13 @@ float str2float (const string &str) {
   float num;
   if((ss >> num).fail())
   {
-      /* ���� */
+      /* 에러 */
   }
   return num;
 }
 
 fstream Dat_File;
 
-typedef struct {
-   unsigned blockNumber;
-   unsigned studentId;
-} SaveInfo;
-
-vector<SaveInfo> infoVector;
-
-void insertBlockNumber(unsigned blockNumber, unsigned studentId){
-
-   SaveInfo s;
-   s.blockNumber = blockNumber;
-   s.studentId = studentId;
-   infoVector.push_back(s);
-}
-
-bool checkBlockNumber(unsigned blockNumber, unsigned studentId){
-   bool isThere = false;
-   for(int i = 0; i < infoVector.size(); i++){
-      if(infoVector[i].studentId == studentId) {
-         if(infoVector[i].blockNumber == blockNumber){
-            isThere = true;
-         }
-      }
-   }
-
-   return isThere;
-}
 
 class Student{
 public :
@@ -89,7 +62,7 @@ public :
    Block();
    int  Record_Count;
    int  Bit_Number;
-   char Block_Garbage[22];
+   char Block_Garbage[24];
 };
 
 Student::Student()
@@ -103,7 +76,7 @@ Student::Student()
 Block::Block()
 {
    Record_Count      = 0;
-   Bit_Number         = 0;
+   Bit_Number        = 0;
 }
 Block Dat_block;
 
@@ -393,24 +366,24 @@ void Dynamic_Hash::Make_txt(){
         outfile << endl ;
     }
     cout << endl;
-    cout << "====================================================="<< endl << endl;
-    cout << " �� Total Entered Record Num : "<< total << endl;
-    cout << " �� Total BLOCK Num IN Students.DB : "<< DB_size/4096 << endl;
+    cout << "=========================================================="<< endl << endl;
+    cout << " ■ Total Entered Record Num : "<< total << endl;
+    cout << " ■ Total BLOCK Num IN Students.DB : "<< DB_size/4096  << endl;
     cout << endl;
     outfile.close();
 
 }
 void Dynamic_Hash::Print_Hash(){
     int i  = 0;
-    cout<< "================<HASH_TABLE>=========================" << endl;
-    cout <<" �� Table_Bit : "<< Table_Bit_Number<< endl;
-    cout<< "=====================================================" << endl;
+    cout<< "================<HASH_TABLE>==============================" << endl;
+    cout <<" ■ Table_Bit : "<< Table_Bit_Number<< endl;
+    cout<< "==========================================================" << endl;
     while(1){
         if(Hash_table.Table_Block_Offset[i]==-1){
             break;
         }
         else{
-            cout<< " �� Primary Index " << i << " of Block Offset : "<< Hash_table.Table_Block_Offset[i] << endl;
+            cout<< " ■ Primary Index " << i << " of Block Offset : "<< Hash_table.Table_Block_Offset[i] << endl;
         }
         i++;
     }
@@ -439,7 +412,7 @@ public :
    Score_Element Node_Element[BLOCKSIZE/sizeof(Score_Element)-2];
    long    Last_Offset;
    long    Next_Node_Offset;
-   int     Score_Element_Count;
+   int     Element_Count;                                     // 갯수
    int     Node_part;                                               // 1: Root Node 2: Internal Node 3: External Node. 4 : Root Node & External Node.
    Node();
 };
@@ -448,31 +421,34 @@ Node::Node()
 {
    Last_Offset = -1;
    Next_Node_Offset = -1;
-   Score_Element_Count = 0;
+   Element_Count = 0;
    Node_part = 0;
 }
-
+/*
+    0  4bit Root_Node_Offset
+    4  Node : 1st Leaf Node
+*/
 class B_Plus_Tree{
 private :
-   int      Node_Count;
-   long     Root_Node_Offset;
+   int      Node_Count;             // Tree 의 총 노드 갯수
+   long     Root_Node_Offset;       // Root node Offset
 
-   long     Current_Node_Offset;
-   bool     checkok;
-   int      Element_In_Node;
-   long     Left_element;
-   long     Right_element;
+   long     Current_Node_Offset;    // 현재 Node Offset
+   bool     checkok;                // 현재 Node의 Update 유무.
+   int      Max_Element_In_Node;        // 한 Node 안의 Element 수.
+   long     Left_element;           // Split될 때 왼쪽   Node.
+   long     Right_element;          // Split될 때 오른쪽 Node.
 
    Node* Current_Node;
 
 
    void Open_Tree(char* Filename);
    void GetNode(long s_Offset);
-   int  FindInNode(Node* score_current_node, float find_score, bool& score_is_find);
-   void Insert_Element(float score, long ID_offset, Node* score_current_node, int Insert_Index);
-   void NoSplitInsert(float score,  long ID_offset, Node* score_current_node, int Insert_Index);
-   void SplitInsert(float score, long ID_offset, Node* score_current_node, int Insert_Index);
-   int  Get_Parent_Node(float score, long score_current_node_Offset);
+   int  FindInNode(Node* current_node, float find_score, bool& score_is_find);
+   void Insert_Element(float score, long ID_offset, Node* current_node, int Insert_Index);
+   void NoSplitInsert(float score,  long ID_offset, Node* current_node, int Insert_Index);
+   void SplitInsert(float score, long ID_offset, Node* current_node, int Insert_Index);
+   int  Get_Parent_Node(float score, long current_node_Offset);
 
 public :
     fstream  Tree_File;
@@ -482,6 +458,7 @@ public :
    bool Insert(float score, long ID_offset);
    void Score_search(float lower, float uppper, int* Result);
    void get_leaf_Node(int num);
+   int Check_leaf_Node_num();
 };
 
 B_Plus_Tree::B_Plus_Tree(char* Filename)
@@ -489,7 +466,7 @@ B_Plus_Tree::B_Plus_Tree(char* Filename)
    Current_Node = new Node;
    Current_Node_Offset = -1;
    checkok = false;
-   Element_In_Node = BLOCKSIZE/sizeof(Score_Element)-2;
+   Max_Element_In_Node = BLOCKSIZE/sizeof(Score_Element)-2;  // 510
    Left_element = -1;
    Right_element   = -1;
    Open_Tree(Filename);
@@ -527,8 +504,7 @@ void B_Plus_Tree::Open_Tree(char* Filename)
       Node* Root = new Node;
       Root->Node_part = 4;
       Tree_File.seekp(sizeof(long), ios::beg);
-      std::streamoff c = Tree_File.tellg();
-      Root_Node_Offset = c;
+      Root_Node_Offset = Tree_File.tellg();
       Tree_File.write((char*)Root, sizeof(Node));
       Tree_File.seekp(0, ios::beg);
       Tree_File.write((char*)&Root_Node_Offset, sizeof(long));
@@ -549,7 +525,7 @@ void B_Plus_Tree::Open_Tree(char* Filename)
 }
 
 
-long B_Plus_Tree::Find(float find_score, int& S_Index, bool& score_is_find)
+long B_Plus_Tree::Find(float find_score, int& S_Index, bool& score_is_find) // Insert Find  score , -1 ,false 특정 학점이 있는 Node 와 Element Index  찾는 함수
 {
    score_is_find = false;
    S_Index = 0;
@@ -558,27 +534,28 @@ long B_Plus_Tree::Find(float find_score, int& S_Index, bool& score_is_find)
 
    while(1)
    {
+       //  Current Node 로 변경
       GetNode(s_Node_Offset);
 
 
-      if(Current_Node->Node_part == 3 || Current_Node->Node_part == 4)
+      if(Current_Node->Node_part == 3 || Current_Node->Node_part == 4) // First Leaf Node OR Leaf Node 일때 바로 Insert 하면 되니까 Return
          break;
-      else
+      else // Interner Or Root case
       {
-         for(i=0; i<Current_Node->Score_Element_Count; i++)
+         for(i=0; i<Current_Node->Element_Count; i++) // Node 안에 유효한 갯수만큼 비교
          {
-            if(find_score <= Current_Node->Node_Element[i].Key_Score)
+            if(find_score <= Current_Node->Node_Element[i].Key_Score) // 작거나 같으면
             {
-               s_Node_Offset = Current_Node->Node_Element[i].Offset;
+               s_Node_Offset = Current_Node->Node_Element[i].Offset; // 하위노드로 이동
                break;
             }
          }
-         if(i == Current_Node->Score_Element_Count)
+         if(i == Current_Node->Element_Count) // score 가  더 클 때
          {
-            if(Current_Node->Score_Element_Count == Element_In_Node)
+            if(Current_Node->Element_Count == Max_Element_In_Node) // 꽉 차 있으면 하위 노드로
                s_Node_Offset = Current_Node->Last_Offset;
             else
-               s_Node_Offset = Current_Node->Node_Element[i].Offset;
+               s_Node_Offset = Current_Node->Node_Element[i].Offset; // 맨뒤에
          }
       }
    }
@@ -594,9 +571,9 @@ long B_Plus_Tree::Find(float find_score, int& S_Index, bool& score_is_find)
 
 
 
-void B_Plus_Tree::GetNode(long s_Offset)
+void B_Plus_Tree::GetNode(long s_Offset) // Current_Node_Offset -> input_Offset
 {
-    // Current Node �� ������� �ٷ� Return
+    // Current Node 가 맞을경우 바로 Return
    if(Current_Node_Offset == s_Offset)
    {
       checkok = true;
@@ -608,29 +585,29 @@ void B_Plus_Tree::GetNode(long s_Offset)
       Tree_File.write((char*)Current_Node, sizeof(Node));
       checkok = false;
    }
-    // Current Node �� �ٲ���
+    // Current Node 로 바꿔줌
    Current_Node_Offset = s_Offset;
    Tree_File.seekg(Current_Node_Offset, ios::beg);
    Tree_File.read((char*)Current_Node, sizeof(Node));
 }
 
-int B_Plus_Tree::FindInNode(Node* score_current_node, float find_score, bool& score_is_find)
+int B_Plus_Tree::FindInNode(Node* current_node, float find_score, bool& score_is_find) // Elemnet[] 에서의 index 값 반환
 {
-   for(int i=0; i<score_current_node->Score_Element_Count; i++)
+   for(int i=0; i<current_node->Element_Count; i++) // i가 커질수록 score 는 높아진다 .
    {
-      if(score_current_node->Node_Element[i].Key_Score == find_score)
+      if(current_node->Node_Element[i].Key_Score == find_score)
       {
          score_is_find = true;
          return i;
       }
-      if(find_score < score_current_node->Node_Element[i].Key_Score)
+      if(find_score < current_node->Node_Element[i].Key_Score) // 학점이 작을 때
       {
          score_is_find = false;
          return i;
       }
    }
    score_is_find = false;
-   return score_current_node->Score_Element_Count;
+   return current_node->Element_Count; // Node안의 마지막에 넣기 위해서
 }
 
 bool B_Plus_Tree::Insert(float score, long ID_offset)
@@ -645,88 +622,90 @@ bool B_Plus_Tree::Insert(float score, long ID_offset)
 }
 
 
-void B_Plus_Tree::Insert_Element(float score, long ID_offset, Node* score_current_node, int Insert_Index)
+void B_Plus_Tree::Insert_Element(float score, long ID_offset, Node* current_node, int Insert_Index)
 {
-   if(score_current_node->Score_Element_Count != Element_In_Node)
-      NoSplitInsert(score, ID_offset, score_current_node, Insert_Index);
+   if(current_node->Element_Count != Max_Element_In_Node)  // 510개 안되면
+      NoSplitInsert(score, ID_offset, current_node, Insert_Index);  // common way
    else
-      SplitInsert(score, ID_offset, score_current_node, Insert_Index);
+      SplitInsert(score, ID_offset, current_node, Insert_Index);
 }
 
-void B_Plus_Tree::NoSplitInsert(float score, long ID_offset, Node* score_current_node, int Insert_Index)
+void B_Plus_Tree::NoSplitInsert(float score, long ID_offset, Node* current_node, int Insert_Index)  // Insert_Index 작은거면 0
 {
-   if(score_current_node->Score_Element_Count <= 106)
-      score_current_node->Node_Element[score_current_node->Score_Element_Count+1].Offset = score_current_node->Node_Element[score_current_node->Score_Element_Count].Offset;
+
+   if(current_node->Element_Count <= 106)
+      current_node->Node_Element[current_node->Element_Count+1].Offset = current_node->Node_Element[current_node->Element_Count].Offset;
    else
-      score_current_node->Last_Offset = score_current_node->Node_Element[score_current_node->Score_Element_Count].Offset;
+      current_node->Last_Offset = current_node->Node_Element[current_node->Element_Count].Offset;
 
-   for(int j=score_current_node->Score_Element_Count; j>Insert_Index; j--)
+   for(int j=current_node->Element_Count; j>Insert_Index; j--) // 새로 들어오면 한칸씩 뒤로 이동
    {
-      score_current_node->Node_Element[j].Key_Score    = score_current_node->Node_Element[j-1].Key_Score;
-      score_current_node->Node_Element[j].Offset = score_current_node->Node_Element[j-1].Offset;
+      current_node->Node_Element[j].Key_Score    = current_node->Node_Element[j-1].Key_Score;
+      current_node->Node_Element[j].Offset = current_node->Node_Element[j-1].Offset;
    }
+    // 들어가는 index 에 insert
+   current_node->Node_Element[Insert_Index].Key_Score = score;
+   current_node->Node_Element[Insert_Index].Offset = ID_offset;
+   current_node->Element_Count++;
 
-   score_current_node->Node_Element[Insert_Index].Key_Score = score;
-   score_current_node->Node_Element[Insert_Index].Offset = ID_offset;
-   score_current_node->Score_Element_Count++;
-
-   checkok = true;
-   if(Right_element != -1 || Left_element != -1)
+   checkok = true; // Tree 에 insert 완료
+   if(Right_element != -1 || Left_element != -1)    // Interner Node Case
    {
-      score_current_node->Node_Element[Insert_Index].Offset = Left_element;
-      score_current_node->Node_Element[Insert_Index+1].Offset = Right_element;
+      current_node->Node_Element[Insert_Index].Offset = Left_element;
+      current_node->Node_Element[Insert_Index+1].Offset = Right_element;
       Right_element = -1;
       Left_element = -1;
    }
 }
 
-void B_Plus_Tree::SplitInsert(float score, long ID_offset, Node* score_current_node, int Insert_Index)
+void B_Plus_Tree::SplitInsert(float score, long ID_offset, Node* current_node, int Insert_Index)
 {
    int s, t,i;
    Node* New_Node = new Node;
    Tree_File.seekg(0, ios::end);
    long  New_Node_Offset = Tree_File.tellg();
 
-   if(score_current_node->Node_part == 1 || score_current_node->Node_part == 2)
+   if(current_node->Node_part == 1 || current_node->Node_part == 2) // Root OR InterNer 일떄 Interner 로
       New_Node->Node_part = 2;
-   else if(score_current_node->Node_part == 3 || score_current_node->Node_part == 4)
+   else if(current_node->Node_part == 3 || current_node->Node_part == 4) // 1st Leaf OR Leaf Node 일때
    {
       New_Node->Node_part = 3;
-      New_Node->Next_Node_Offset = score_current_node->Next_Node_Offset;
-      score_current_node->Next_Node_Offset = New_Node_Offset;
+      New_Node->Next_Node_Offset = current_node->Next_Node_Offset; // -1
+      current_node->Next_Node_Offset = New_Node_Offset; // New Node 주소
    }
    Tree_File.seekp(0, ios::end);
    New_Node_Offset = Tree_File.tellp();
    Tree_File.write((char*)New_Node, sizeof(Node));
    Node_Count++;
 
+   //  위까지 New Node 생성되고 File 에  입력된상태
 
-   for(s=Element_In_Node/2, t=0; s<Element_In_Node; s++, t++)
+   for(s = Max_Element_In_Node/2, t=0; s < Max_Element_In_Node; s++, t++) // 반 타작
    {
-      New_Node->Node_Element[t].Key_Score    = score_current_node->Node_Element[s].Key_Score;
-      New_Node->Node_Element[t].Offset = score_current_node->Node_Element[s].Offset;
+      New_Node->Node_Element[t].Key_Score    = current_node->Node_Element[s].Key_Score;
+      New_Node->Node_Element[t].Offset = current_node->Node_Element[s].Offset;
 
-      score_current_node->Node_Element[s].Key_Score    = -1;
-      score_current_node->Node_Element[s].Offset = -1;
+      current_node->Node_Element[s].Key_Score    = -1;
+      current_node->Node_Element[s].Offset = -1;
    }
 
-   checkok = true;
+   checkok = true; // Insert 위해 트리 상황 업데이트 완료
 
-   score_current_node->Score_Element_Count = Element_In_Node/2;
-   New_Node->Score_Element_Count = Element_In_Node - Element_In_Node/2;
+   current_node->Element_Count = Max_Element_In_Node/2;
+   New_Node->Element_Count = Max_Element_In_Node - Max_Element_In_Node/2;
+
+// 마지막 Element
+   New_Node->Node_Element[t].Offset = current_node->Last_Offset; // -1
+   current_node->Last_Offset = -1;
 
 
-   New_Node->Node_Element[t].Offset = score_current_node->Last_Offset;
-   score_current_node->Last_Offset = -1;
-
-
-   if(Insert_Index < Element_In_Node/2)
+   if(Insert_Index < Max_Element_In_Node/2) // 205
    {
-      NoSplitInsert(score, ID_offset, score_current_node, Insert_Index);
+      NoSplitInsert(score, ID_offset, current_node, Insert_Index);
    }
    else
    {
-      NoSplitInsert(score, ID_offset, New_Node, (Insert_Index - Element_In_Node/2));
+      NoSplitInsert(score, ID_offset, New_Node, (Insert_Index - Max_Element_In_Node/2));
    }
 
 
@@ -734,17 +713,18 @@ void B_Plus_Tree::SplitInsert(float score, long ID_offset, Node* score_current_n
    Tree_File.write((char*)New_Node, sizeof(Node));
    delete New_Node;
 
+
    Left_element = Current_Node_Offset;
    Right_element   = New_Node_Offset;
 
-   float  s_Parent_Insert_Score    = score_current_node->Node_Element[score_current_node->Score_Element_Count-1].Key_Score;
+   float  s_Parent_Insert_Score    = current_node->Node_Element[current_node->Element_Count-1].Key_Score; // Parent 노드에서 Index 값을 가지는 학점
 
-   if(Get_Parent_Node(s_Parent_Insert_Score, Current_Node_Offset) != -1)
+   if(Get_Parent_Node(s_Parent_Insert_Score, Current_Node_Offset) != -1) // 성공 했을떄     왼쪽에 쓰기
    {
       bool score_is_find = false;
-      int S_Index = FindInNode(Current_Node, s_Parent_Insert_Score, score_is_find);
+      int S_Index = FindInNode(Current_Node, s_Parent_Insert_Score, score_is_find); // s_Parent_Insert_Score 학점 값 가진 Current Node의  Element Index 값 반환
 
-      for(i=0; i<Current_Node->Score_Element_Count; i++)
+      for(i=0; i<Current_Node->Element_Count; i++)
       {
          if(s_Parent_Insert_Score <= Current_Node->Node_Element[i].Key_Score || Current_Node->Node_Element[i].Key_Score == -1)
          {
@@ -768,7 +748,7 @@ void B_Plus_Tree::SplitInsert(float score, long ID_offset, Node* score_current_n
       Left_element = -1;
       New_Root_Node->Node_part = 1;
       Current_Node->Node_part = 3;
-      New_Root_Node->Score_Element_Count = 1;
+      New_Root_Node->Element_Count = 1;
       Node_Count++;
 
       Tree_File.write((char*)New_Root_Node, sizeof(Node));
@@ -779,7 +759,7 @@ void B_Plus_Tree::SplitInsert(float score, long ID_offset, Node* score_current_n
    }
 }
 
-int B_Plus_Tree::Get_Parent_Node(float score, long score_current_node_Offset)
+int B_Plus_Tree::Get_Parent_Node(float score, long current_node_Offset)
 {
    long Temp_P_Node_Offset = -1;
 
@@ -795,47 +775,15 @@ int B_Plus_Tree::Get_Parent_Node(float score, long score_current_node_Offset)
       if(Current_Node->Node_part == 3)
          continue;
 
-      for(int j=0; j<=Current_Node->Score_Element_Count; j++)
+      for(int j=0; j<=Current_Node->Element_Count; j++)
       {
-         if(score_current_node_Offset == Current_Node->Node_Element[j].Offset)
+         if(current_node_Offset == Current_Node->Node_Element[j].Offset)
             return j;
       }
    }
    return -1;
 }
 
-void B_Plus_Tree::Score_search(float lower, float uppper, int* Result)
-{
-   int S_Index, Result_Count = 0;
-   bool score_is_find;
-   Find(lower, S_Index, score_is_find);
-   int i = S_Index;
-
-   while(1)
-   {
-
-      if(i == (Current_Node->Score_Element_Count-1) && Current_Node->Node_Element[i].Key_Score <=  uppper)
-      {
-         Result[Result_Count++] = Current_Node->Node_Element[i].Offset;
-         if(Current_Node->Next_Node_Offset != -1)
-         {
-
-            GetNode(Current_Node->Next_Node_Offset);
-            i = 0;
-         }
-         else
-            return;
-      }
-
-      if(lower <= Current_Node->Node_Element[i].Key_Score && Current_Node->Node_Element[i].Key_Score <= uppper)
-         Result[Result_Count++] = Current_Node->Node_Element[i].Offset;
-      if(uppper < Current_Node->Node_Element[i].Key_Score)
-         return;
-      i++;
-   }
-   return;
-}
-// New Func
 void B_Plus_Tree::get_leaf_Node(int num){
 
     int Result[20000];
@@ -845,20 +793,16 @@ void B_Plus_Tree::get_leaf_Node(int num){
     for(int i=0; i<20000; i++)
       Result[i] = -1;
 
-    GetNode(Root_Node_Offset);
+    GetNode(4); // 1st Node Offset
 
     while(1){
-        GetNode(Current_Node->Node_Element[0].Offset);
-        if(Left_element == -1){  // 1st Leaf Node
             for(int check = 1; check < num; check++){
                 GetNode(Current_Node->Next_Node_Offset);
             }
-            for(int i = 0;i<Current_Node->Score_Element_Count; i++){
+            for(int i = 0;i < Current_Node->Element_Count; i++){
                 Result[i] = Current_Node->Node_Element[i].Offset;
             }
             break;
-        }
-
     }
     for(int i = 0 ; i < 20000; i++){
         if(Result[i]!=-1){
@@ -870,7 +814,17 @@ void B_Plus_Tree::get_leaf_Node(int num){
 
              for(int j=0; j<Dat_block.Record_Count; j++)
                 if(Result[i] == Dat_block.Record[j].ID){
-                    cout << Dat_block.Record[j].ID << "  " << Dat_block.Record[j].Name << " "<< Dat_block.Record[j].Score << " " << Dat_block.Record[j].advisorID << endl;
+                    cout<< i << '\t' << Dat_block.Record[j].ID << '\t' << Dat_block.Record[j].Name;
+                    int i;
+                    for(i = 0; i < 20 ; i++){
+                        if(Dat_block.Record[j].Name[i] == '\0')
+                            break;
+                    }
+                    if(i <16){
+                        for(; i<20;i++)
+                                cout << " ";
+                    }
+                    cout<< '\t'  << Dat_block.Record[j].Score <<'\t'<< Dat_block.Record[j].advisorID << endl;
                     break;
                 }
         }
@@ -879,6 +833,20 @@ void B_Plus_Tree::get_leaf_Node(int num){
 
     }
 
+}
+int B_Plus_Tree::Check_leaf_Node_num(){
+    GetNode(4);
+    int num = 1;
+    while(1){
+        if(Current_Node->Next_Node_Offset != -1){
+            GetNode(Current_Node->Next_Node_Offset);
+            num++;
+        }
+        else{
+            break;
+        }
+    }
+    return num;
 }
 
 B_Plus_Tree* Tree;
@@ -952,7 +920,6 @@ unsigned insertRecord(char* name, unsigned ID, float score, unsigned advisorID)
             string student_id=temp1;
             Dat_File_Offset = Hash->Get_Hash_Offset(student_id);
             blockNumber=Dat_File_Offset;
-            insertBlockNumber(blockNumber, studentid);
          }
          insertRecord(name,ID,score,advisorID);
       }
@@ -984,46 +951,7 @@ unsigned searchID(unsigned ID){
 
    return blockNumber;
 }
-unsigned searchScore(float lower, float upper){
 
-   unsigned numOfScore = 0;
-   int Result[20000];
-   unsigned Dat_File_Offset;
-   int i;
-   for(i=0; i<20000; i++)
-      Result[i] = -1;
-
-   Tree->Score_search(lower, upper, Result);
-
-   int Total_Count = 0;
-
-   char temp[80] = "";
-   string id   = "";
-   for(i=0; i<20000; i++)
-   {
-      if(Result[i] != -1)
-      {
-         sprintf(temp, "%d", Result[i]);
-         id = temp;
-         Dat_File_Offset = Hash->Get_Hash_Offset(id);
-         Dat_File.seekg(Dat_File_Offset, ios::beg);
-         Dat_File.read((char*)&Dat_block, sizeof(Block));
-
-         for(int j=0; j<Dat_block.Record_Count; j++)
-            if(Result[i] == Dat_block.Record[j].ID)
-            {
-                cout << Dat_block.Record[j].ID << "  " << Dat_block.Record[j].Name << " "<< Dat_block.Record[j].Score << " " << Dat_block.Record[j].advisorID << endl;
-               Total_Count++;
-               break;
-            }
-      }
-      else
-         break;
-   }
-   numOfScore=Total_Count;
-   return numOfScore;
-}
-// main
 int main()
 {
 
@@ -1031,22 +959,14 @@ int main()
 
    ifstream fin("sampleData.csv", ios::in);
 
-   // for ESPA
-   ofstream fout("sampleData.out", ios::out);
-
 
     string line;
-    char com;
+
     int total_num;
-    char name[21];
-    string first_name = "";
-    string last_name = "";
-    string total_name = "";
+    char name[20]= "";
     unsigned studentID = 0;
     float score = 0;
     unsigned advisorID = 0;
-
-    unsigned last_cell_id = 0 ;
 
 
     int input_num = 0;
@@ -1054,8 +974,9 @@ int main()
     while(getline(fin,line))
     {
         stringstream  lineStream(line);
-        string        cell;
+        string        cell= "";
 
+        int a = 0;
         if(sign == 0){
             getline(lineStream,cell,',');
             total_num = str2int(cell);
@@ -1064,13 +985,14 @@ int main()
             }
             sign++;
         }
+
         else if(sign > 0){
             getline(lineStream,cell,',');
-            strcpy(name,cell.c_str());
-             if(cell.length() > 19){
-                cout << cell <<  " " << cell.length() << name <<endl;
+            if(cell.length() > 19){
                 cell = cell.substr(0,19);
+
             }
+            strcpy(name,cell.c_str());
             getline(lineStream,cell,',');
             studentID = str2unsign(cell);
             getline(lineStream,cell,',');
@@ -1081,19 +1003,29 @@ int main()
 
             // insertRecord
             unsigned blockNumber = insertRecord(name, studentID, score, advisorID);
-             // for ESPA
-            insertBlockNumber(blockNumber, studentID);
+
         }
     }
     Hash->Make_txt();
     Hash->Print_Hash();
     int num;
-    cout << " Please Enter leaf Num : ";
-    cin >> num;
-    cout << "ID " << "NAME" << "" << "" <<endl;
-    Tree->get_leaf_Node(num);
+    int break_sign = 0;
 
-   fout.close();
+    while(break_sign==0){
+        if(num == -1){
+            break_sign++;
+        }
+        else{
+            cout << " Leaf Node Number : "<< "1 ~ " << Tree->Check_leaf_Node_num() << endl;
+            cout << " Please Enter leaf Num ( Exit : -1 ) : ";
+            cin >> num;
+            if(num == -1){
+                return 0;
+            }
+            Tree->get_leaf_Node(num);
+        }
+        cout << endl;
+    }
    fin.close();
    return 0;
 }
