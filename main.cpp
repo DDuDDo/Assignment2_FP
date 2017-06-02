@@ -177,6 +177,7 @@ unsigned Dynamic_Hash::HASH(string str)
    return key;
 }
 
+// stud_id -> Hash_index -> DB_Offset
 unsigned Dynamic_Hash::Get_Hash_Offset(string stu_id)
 {
    unsigned Primary_Index = HASH(stu_id);
@@ -188,6 +189,7 @@ unsigned Dynamic_Hash::Get_Hash_Offset(string stu_id)
    else
    {
       Primary_Index = Primary_Index >> (32-Table_Bit_Number);
+
    }
    return Hash_table.Table_Block_Offset[Primary_Index];
 }
@@ -200,16 +202,16 @@ void Dynamic_Hash::Block_Full(string stu_id, int Block_Bit_Number, fstream& Dat_
       Primary_Index = Primary_Index >> (32-Table_Bit_Number);
    else
       Primary_Index = 0;
-
+    // 전체 BIT확장이 필요할떄
    if(Block_Bit_Number == Table_Bit_Number)
    {
-
       Expand_Table(Primary_Index, Dat_File);
       return;
    }
+   // 해당 블락 BIT 확장만 필요할떄
    else if(Block_Bit_Number < Table_Bit_Number)
    {
-      Block* Buffer = new Block;
+      Block* Buffer = new Block;    // 기존 꽉찬 Block copy
       Dat_File.seekp(0, ios::end);
       std::streamoff a = Dat_File.tellg();
       long New_Block_Offset = a;
@@ -223,6 +225,7 @@ void Dynamic_Hash::Block_Full(string stu_id, int Block_Bit_Number, fstream& Dat_
 
       int start = -1, end = -1;
       int i;
+
       for(i=0; i<1024; i++)
       {
          if(start == -1 && Hash_table.Table_Block_Offset[i] == Hash_table.Table_Block_Offset[(int)Primary_Index])
@@ -235,10 +238,10 @@ void Dynamic_Hash::Block_Full(string stu_id, int Block_Bit_Number, fstream& Dat_
       }
 
       for(i=start; i<=(start+(end-start)/2); i++)
-         Hash_table.Table_Block_Offset[i] = Hash_table.Table_Block_Offset[Primary_Index];
+         Hash_table.Table_Block_Offset[i] = Hash_table.Table_Block_Offset[Primary_Index];  // 기존 Offset
 
       for(i=(start+(end-start)/2)+1; i<=end; i++)
-         Hash_table.Table_Block_Offset[i] = New_Block_Offset;
+         Hash_table.Table_Block_Offset[i] = New_Block_Offset;  // 새로 추가된 offset 저장 New Block
 
       unsigned Hash_primary_index;
       char temp2[30]="";
@@ -246,7 +249,7 @@ void Dynamic_Hash::Block_Full(string stu_id, int Block_Bit_Number, fstream& Dat_
 
       for(int j=0; j<127; j++)
       {
-         unsigned t=Buffer->Record[j].ID;
+         unsigned t = Buffer->Record[j].ID;
          sprintf(temp2, "%d",t);
          id = temp2;
          Hash_primary_index = HASH(id);
@@ -280,24 +283,23 @@ void Dynamic_Hash::Expand_Table(unsigned Primary_Index, fstream& Dat_File)
    Block* Buffer = new Block;
     int i = 0;
    Dat_File.seekp(0, ios::end);
-   std::streamoff b = Dat_File.tellg();
-   long New_Block_Offset = b;
+   long New_Block_Offset = Dat_File.tellg();
    Block* New_Block = new Block;
    Block* Old_Block = new Block;
    unsigned Table_Block_Number = 2;
-
+    // Table_Block_Number 를 2의  Table_Bit_Number 제곱 값으로
    if(Table_Bit_Number != 0)
       Table_Block_Number = Table_Block_Number << (Table_Bit_Number-1);
    else
       Table_Block_Number = 1;
 
 
-   for(int i=Table_Block_Number-1; i>=0; i--)
+   for(int i = Table_Block_Number-1; i>=0; i--)
    {
-      if(i == (int)Primary_Index)
+      if(i == (int)Primary_Index) // 꽉찬 Block Index
       {
-         Hash_table.Table_Block_Offset[2*i]   = Hash_table.Table_Block_Offset[i];
-         Hash_table.Table_Block_Offset[2*i+1] = New_Block_Offset;
+         Hash_table.Table_Block_Offset[2*i]   = Hash_table.Table_Block_Offset[i];   // 2등분
+         Hash_table.Table_Block_Offset[2*i+1] = New_Block_Offset;                   // 2등분
 
 
          Dat_File.seekg(Hash_table.Table_Block_Offset[i], ios::beg);
@@ -305,7 +307,7 @@ void Dynamic_Hash::Expand_Table(unsigned Primary_Index, fstream& Dat_File)
 
          Table_Bit_Number++;
          Old_Block->Bit_Number = Table_Bit_Number;
-         New_Block->Bit_Number = Table_Bit_Number;
+         New_Block->Bit_Number = Table_Bit_Number;  // 최대 확장 블럭
 
          unsigned Hash_primary_index;
          char temp3[30]="";
@@ -320,26 +322,27 @@ void Dynamic_Hash::Expand_Table(unsigned Primary_Index, fstream& Dat_File)
             Hash_primary_index = HASH(id);
             Hash_primary_index = Hash_primary_index >> (32-Table_Bit_Number);
             if(Hash_primary_index == 2*i)
-               Old_Block->Record[Old_Block->Record_Count++] = Buffer->Record[j];
+               Old_Block->Record[Old_Block->Record_Count++] = Buffer->Record[j];    // 반은 여기
             else
             {
-               New_Block->Record[New_Block->Record_Count++] = Buffer->Record[j];
+               New_Block->Record[New_Block->Record_Count++] = Buffer->Record[j];    // 반은 여기
 
             }
          }
-         Dat_File.seekp(Hash_table.Table_Block_Offset[2*i], ios::beg);
+         Dat_File.seekp(Hash_table.Table_Block_Offset[2*i], ios::beg);  // i-> 2i 로 primary index 변경
          Dat_File.write((char*)Old_Block, sizeof(Block));
-         Dat_File.seekp(New_Block_Offset, ios::beg);
+         Dat_File.seekp(New_Block_Offset, ios::beg);                    // 2*i+1 는  새로생긴 Block
          Dat_File.write((char*)New_Block, sizeof(Block));
       }
       else
       {
-         Hash_table.Table_Block_Offset[2*i]   = Hash_table.Table_Block_Offset[i];
+         Hash_table.Table_Block_Offset[2*i]   = Hash_table.Table_Block_Offset[i];   // 아닌 애들도 같은곳 갈키게 변경 1->2 bit 확장했을때 1,3은 같은곳(원래 그렇게 되있으니  Table 정보 변경)
          Hash_table.Table_Block_Offset[2*i+1] = Hash_table.Table_Block_Offset[i];
       }
 
 
    }
+   // 변경된 Hash Table 정보 Write
       Hash_File.seekp(0, ios::beg);
       Hash_File.write((char*)&Table_Bit_Number, sizeof(Table_Bit_Number));
       Hash_File.write((char*)&Hash_table, sizeof(Hash_table));
@@ -878,7 +881,7 @@ bool openDB(char* filename){
    return true;
 }
 
-unsigned insertRecord(char* name, unsigned ID, float score, unsigned advisorID)
+void insertRecord(char* name, unsigned ID, float score, unsigned advisorID)
 {
    char* temp = new char[10];
    char* temp1 = new char[10];
@@ -913,14 +916,6 @@ unsigned insertRecord(char* name, unsigned ID, float score, unsigned advisorID)
       {
          Hash->Block_Full(id, Dat_block.Bit_Number, Dat_File);
 
-         for(int i=0; i<Dat_block.Record_Count; i++)
-         {
-            unsigned studentid = Dat_block.Record[i].ID;
-            sprintf(temp1, "%d",studentid);
-            string student_id=temp1;
-            Dat_File_Offset = Hash->Get_Hash_Offset(student_id);
-            blockNumber=Dat_File_Offset;
-         }
          insertRecord(name,ID,score,advisorID);
       }
 
@@ -929,8 +924,6 @@ unsigned insertRecord(char* name, unsigned ID, float score, unsigned advisorID)
          Tree->Insert(score,(long)ID);
       }
 
-   blockNumber=Dat_File_Offset;
-   return blockNumber;
 }
 unsigned searchID(unsigned ID){
 
@@ -952,23 +945,16 @@ unsigned searchID(unsigned ID){
    return blockNumber;
 }
 
-int main()
-{
-
-   openDB("Students");
-
-   ifstream fin("sampleData.csv", ios::in);
-
+int main(){
+    openDB("Students");
+    ifstream fin("sampleData.csv", ios::in);
 
     string line;
-
     int total_num;
     char name[20]= "";
     unsigned studentID = 0;
     float score = 0;
     unsigned advisorID = 0;
-
-
     int input_num = 0;
     int sign = 0;
     while(getline(fin,line))
@@ -990,7 +976,6 @@ int main()
             getline(lineStream,cell,',');
             if(cell.length() > 19){
                 cell = cell.substr(0,19);
-
             }
             strcpy(name,cell.c_str());
             getline(lineStream,cell,',');
@@ -999,11 +984,8 @@ int main()
             score = str2float(cell);
             getline(lineStream,cell,',');
             advisorID = str2unsign(cell);
-
-
             // insertRecord
-            unsigned blockNumber = insertRecord(name, studentID, score, advisorID);
-
+            insertRecord(name, studentID, score, advisorID);
         }
     }
     Hash->Make_txt();
